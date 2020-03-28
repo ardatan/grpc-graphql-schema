@@ -1,5 +1,3 @@
-import * as _ from 'lodash';
-
 import {
   GraphQLObjectType, GraphQLFieldConfigMap, Thunk, GraphQLFieldConfig, GraphQLOutputType,
 } from 'graphql';
@@ -7,18 +5,23 @@ import {
 import { withAsyncIteratorCancel } from './subscription';
 
 import {
-  convertGrpcTypeToGraphqlType,
-} from './type_converter';
-
-import {
   typeDefinitionCache,
 } from './types';
+import { Readable } from 'stream';
+import { asyncMap } from 'iter-tools';
+
+const isEmpty = (obj: any) => [Object, Array].includes((obj || {}).constructor) && !Object.entries((obj || {})).length;
 
 function getGraphqlMethodsFromProtoService({
   definition,
   serviceName,
   client,
   methodType,
+}: {
+  definition: any,
+  serviceName: string;
+  client: any;
+  methodType: 'Query' | 'Mutation';
 }) {
   const { methods } = definition;
   const fields: Thunk<GraphQLFieldConfigMap<any, any>> = () => Object.keys(methods).reduce(
@@ -52,9 +55,9 @@ function getGraphqlMethodsFromProtoService({
         };
       }
 
-      const queryField = {
+      const queryField: GraphQLFieldConfig<any, any> = {
         args,
-        type: typeDefinitionCache[responseType],
+        type: typeDefinitionCache[responseType] as GraphQLOutputType,
         description: comment,
         resolve: async (__, arg) => {
           const response = await client[methodName](
@@ -89,7 +92,7 @@ function getGraphqlMethodsFromProtoService({
     },
   );
 
-  if (_.isEmpty(fields())) {
+  if (isEmpty(fields())) {
     return null;
   }
 
@@ -103,6 +106,10 @@ export function getGraphqlQueriesFromProtoService({
   definition,
   serviceName,
   client,
+}: {
+  definition: any,
+  serviceName: string;
+  client: any;
 }) {
   return getGraphqlMethodsFromProtoService({
     definition,
@@ -116,6 +123,10 @@ export function getGraphqlMutationsFromProtoService({
   definition,
   serviceName,
   client,
+}: {
+  definition: any,
+  serviceName: string;
+  client: any;
 }) {
   return getGraphqlMethodsFromProtoService({
     definition,
@@ -129,6 +140,10 @@ export function getGraphQlSubscriptionsFromProtoService({
   definition,
   serviceName,
   client,
+}: {
+  definition: any,
+  serviceName: string;
+  client: any;
 }) {
   const { methods } = definition;
   const fields = () => Object.keys(methods).reduce(
@@ -152,26 +167,17 @@ export function getGraphQlSubscriptionsFromProtoService({
         };
       }
 
-      const subscribeField = {
+      const subscribeField: GraphQLFieldConfig<any, any> = {
         args,
-        type: typeDefinitionCache[responseType],
+        type: typeDefinitionCache[responseType] as GraphQLOutputType,
         description: comment,
-        subscribe: async (__, arg, { pubsub }) => {
-          const response = await client[methodName](
+        subscribe: async (__, arg) => {
+          const response: Readable & { cancel: () => void; } = await client[methodName](
             arg[requestArgName] || {},
             {},
           );
 
-          response.on('data', (data) => {
-            const payload = {};
-            payload[`${serviceName}${methodName}`] = convertGrpcTypeToGraphqlType(
-              data,
-              typeDefinitionCache[responseType],
-            );
-            pubsub.publish(`${methodName}-onSubscribe`, payload);
-          });
-
-          response.on('error', (error) => {
+          response.on('error', (error: Error & { code: number }) => {
             if (error.code === 1) {
               // cancelled
               response.removeAllListeners('error');
@@ -183,9 +189,7 @@ export function getGraphQlSubscriptionsFromProtoService({
             response.removeAllListeners();
           });
 
-          const asyncIterator = pubsub.asyncIterator(
-            `${methodName}-onSubscribe`,
-          );
+          const asyncIterator = asyncMap(data => ({ [`${serviceName}${methodName}`]: data }), response);
 
           return withAsyncIteratorCancel(asyncIterator, () => {
             response.cancel();
@@ -201,7 +205,7 @@ export function getGraphQlSubscriptionsFromProtoService({
     {},
   );
 
-  if (_.isEmpty(fields())) {
+  if (isEmpty(fields())) {
     return null;
   }
 

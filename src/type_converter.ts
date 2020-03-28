@@ -1,23 +1,20 @@
-import * as protobuf from 'protobufjs';
-import * as Long from 'long';
 import {
   GraphQLList,
   GraphQLInputObjectType,
   GraphQLObjectType,
-  isListType,
-  Thunk,
 } from 'graphql';
 
 import {
   GRPC_GQL_TYPE_MAPPING,
   typeDefinitionCache,
 } from './types';
+import { IField, IType } from 'protobufjs';
 
-interface IFieldWithComment extends protobuf.IField {
+interface IFieldWithComment extends IField {
   comment?: string | null | undefined;
 }
 
-interface ITypeWithComment extends protobuf.IType {
+interface ITypeWithComment extends IType {
   fields: { [k: string]: IFieldWithComment };
   comment?: string | null | undefined;
 }
@@ -25,37 +22,6 @@ interface ITypeWithComment extends protobuf.IType {
 interface ProtoDefinitionInput {
   definition: ITypeWithComment;
   typeName: string;
-}
-
-function convertToGraphqlType(value: any): any {
-  if (Long.isLong(value)) {
-    // conver long
-    return value.toNumber();
-  }
-
-  return value;
-}
-
-// TODO: this convert method is not complete
-export function convertGrpcTypeToGraphqlType(payload, typeDef) {
-  const fields = typeDef.getFields();
-
-  Object.keys(fields).forEach((key) => {
-    const value = payload[key];
-    const field = fields[key];
-    const fieldType = field.type;
-
-    if (isListType(fieldType)) {
-      // process list
-      // eslint-disable-next-line no-param-reassign
-      payload[key] = value.map(convertToGraphqlType);
-    } else {
-      // eslint-disable-next-line no-param-reassign
-      payload[key] = convertToGraphqlType(value);
-    }
-  });
-
-  return payload;
 }
 
 export function getGraphqlTypeFromProtoDefinition(

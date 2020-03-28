@@ -1,6 +1,4 @@
-import * as protobuf from 'protobufjs';
-import * as _ from 'lodash';
-import * as grpcCaller from 'grpc-caller';
+import grpcCaller from 'grpc-caller';
 import {
   GraphQLSchema,
   GraphQLInputObjectType,
@@ -15,6 +13,7 @@ import {
   getGraphqlMutationsFromProtoService,
 } from './service_converter';
 import { getPackageProtoDefinition } from './protobuf';
+import { INamespace, AnyNestedObject, IType } from 'protobufjs';
 
 export {
   getGraphqlQueriesFromProtoService,
@@ -23,7 +22,6 @@ export {
 } from './service_converter';
 
 export {
-  convertGrpcTypeToGraphqlType,
   getGraphqlTypeFromProtoDefinition,
 } from './type_converter';
 export {
@@ -51,24 +49,24 @@ export async function getGraphqlSchemaFromGrpc({
     },
   );
 
-  const { nested }: protobuf.INamespace =
+  const { nested }: INamespace =
     await getPackageProtoDefinition(protoFilePath, packageName);
 
   const types: GraphqlInputTypes[] = Object.keys(nested)
     .filter((key: string) => 'fields' in nested[key])
     .reduce(
       (acc: GraphqlInputTypes[], key: string) => {
-        const definition: protobuf.AnyNestedObject = nested[key];
+        const definition: AnyNestedObject = nested[key];
 
         // skip empty
         if (key.startsWith('Empty')) {
           return acc;
         }
 
-        if ((<protobuf.IType>definition).fields) {
+        if ((<IType>definition).fields) {
           return acc.concat([
             getGraphqlTypeFromProtoDefinition({
-              definition: (<protobuf.IType>definition),
+              definition: (<IType>definition),
               typeName: key,
             }),
           ]);

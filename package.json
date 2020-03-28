@@ -1,32 +1,53 @@
 {
-  "name": "grpc-graphql-schema",
-  "version": "0.0.9",
+  "name": "@ardatan/grpc-graphql-schema",
+  "version": "0.1.1",
   "description": "Convert gRPC proto Definition into GraphQL Schema",
-  "main": "lib/index.js",
+  "sideEffects": false,
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "typings": "dist/index.d.ts",
+  "typescript": {
+    "definition": "dist/index.d.ts"
+  },
+  "buildOptions": {
+    "input": "./src/index.ts"
+  },
   "repository": "https://github.com/xanthous-tech/grpc-graphql-schema",
   "author": "Simon Liang <no.lhr0909@gmail.com>",
   "license": "MIT",
   "private": false,
   "scripts": {
-    "build": "tsc --project .",
-    "start": "node ."
+    "clean": "rm -rf dist",
+    "prebuild": "yarn clean",
+    "prepack": "bob-update-version",
+    "build": "bob",
+    "prepare-release": "yarn build",
+    "release": "yarn prepare-release && npm publish dist",
+    "ci:release:canary": "node bump.js && npm publish dist --tag alpha --access public"
   },
   "devDependencies": {
     "@types/graphql": "^14.0.4",
+    "@types/lodash": "4.14.149",
     "@types/node": "^10.12.18",
+    "graphql": "14.6.0",
+    "grpc": "1.24.2",
     "tslint": "^5.12.1",
     "tslint-config-airbnb": "^5.11.1",
     "typescript": "^3.2.2"
   },
   "peerDependencies": {
-    "graphql": "^14.0.2"
+    "graphql": "^14.0.2",
+    "grpc": "^1.17.0"
   },
   "dependencies": {
-    "graphql": "^14.0.2",
-    "grpc": "^1.17.0",
-    "grpc-caller": "^0.11.0",
-    "lodash": "^4.17.11",
-    "long": "^4.0.0",
-    "protobufjs": "^6.8.8"
+    "bob-the-bundler": "0.3.4",
+    "graphql-scalars": "1.0.9",
+    "grpc-caller": "0.13.0",
+    "iter-tools": "^6.2.6",
+    "protobufjs": "6.8.9",
+    "tslib": "1.11.1"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

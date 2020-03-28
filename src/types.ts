@@ -7,6 +7,10 @@ import {
   GraphQLBoolean,
 } from 'graphql';
 
+import {
+  BigIntResolver as GraphQLBigInt,
+} from 'graphql-scalars';
+
 export interface GrpcGraphqlSchemaConfiguration {
   endpoint: string;
   protoFilePath: string;
@@ -22,7 +26,7 @@ export interface TypeMapping {
 // https://www.apollographql.com/docs/apollo-server/schemas/types.html
 export const GRPC_GQL_TYPE_MAPPING: TypeMapping = {
   int32: GraphQLInt,
-  int64: GraphQLFloat, // TODO: https://github.com/graphql/graphql-js/issues/292
+  int64: GraphQLBigInt, // TODO: https://github.com/graphql/graphql-js/issues/292
   float: GraphQLFloat,
   double: GraphQLFloat,
   string: GraphQLString,

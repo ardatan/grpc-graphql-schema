@@ -1,5 +1,5 @@
 const path = require('path');
-const { GraphQLServer, PubSub } = require('graphql-yoga');
+const { GraphQLServer } = require('graphql-yoga');
 const { printSchema } = require('graphql');
 const { getGraphqlSchemaFromGrpc } = require('grpc-graphql-schema');
 
@@ -10,12 +10,8 @@ getGraphqlSchemaFromGrpc({
   packageName: 'io.xtech.example',
 }).then((schema) => {
   console.log(printSchema(schema));
-  const pubsub = new PubSub();
   const server = new GraphQLServer({
     schema,
-    context: {
-      pubsub,
-    },
   });
   server.start({
     port: 4000,
